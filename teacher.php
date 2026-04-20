@@ -14,14 +14,35 @@ $conn = getDB();
 
 // Get filter
 $filterType = $_GET['filter'] ?? 'day'; // day, week, month
-$selectedClass = $_GET['class'] ?? 'XII IPA 1';
 $dateFrom = $_GET['date_from'] ?? date('Y-m-d', strtotime('-1 days', strtotime($currentDate)));
 $dateTo = $_GET['date_to'] ?? $currentDate;
+
+$classes = ['XII IPA 1', 'XII IPA 2', 'XII IPS 1', 'XII IPS 2', 'XI IPA 1', 'XI IPA 2'];
+
+// Teacher's class logic (Prompt 6 restriction: Guru hanya melihat kelas yang dia walikan)
+$conn = getDB();
+$teacher_classes = [];
+if ($_SESSION['role'] === 'teacher' && isset($_SESSION['user_id'])) {
+    if ($conn) {
+        $stmt = $conn->prepare("SELECT class_name FROM teachers WHERE user_id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $teacherInfo = $stmt->fetch();
+        if ($teacherInfo && $teacherInfo['class_name']) {
+            $teacher_classes[] = $teacherInfo['class_name'];
+            $classes = $teacher_classes; // Replace all classes with just their homeroom
+        }
+    }
+}
+
+$selectedClass = $_GET['class'] ?? ($classes[0] ?? 'XII IPA 1');
+// Force selected class to be within allowed classes if teacher
+if ($_SESSION['role'] === 'teacher' && !in_array($selectedClass, $classes)) {
+    $selectedClass = $classes[0] ?? '';
+}
 
 // Get student list and attendance for selected class
 $students = [];
 $attendance = [];
-$classes = ['XII IPA 1', 'XII IPA 2', 'XII IPS 1', 'XII IPS 2'];
 
 if ($conn) {
     try {
@@ -73,40 +94,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_attendance_id'
         }
     }
 }
+
+$pageTitle = 'Kelola Absensi';
+require_once 'includes/layout-wrapper-start.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Guru – SMAN 1 GADINGREJO</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
 
-<div id="pageLoader" class="page-loader"><div class="loader-ring"></div></div>
-<div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-<aside id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <div class="logo-big"><?php echo $schoolInfo['shortname']; ?></div>
-        <div><h2><?php echo $schoolInfo['name']; ?></h2><p>Smart Attendance System</p></div>
-        <button id="sidebarClose" class="sidebar-close"><i class="fa fa-xmark"></i></button>
-    </div>
-    <nav class="sidebar-nav">
-        <div class="sidebar-section">Menu Utama</div>
-        <a href="dashboard.php"><i class="fa fa-gauge"></i> Dashboard</a>
-        <a href="teacher.php" class="active"><i class="fa fa-chalkboard"></i> Kelola Absensi</a>
-        <a href="settings.php"><i class="fa fa-gear"></i> Settings</a>
-        <a href="login.php"><i class="fa fa-right-from-bracket"></i> Logout</a>
-    </nav>
-</aside>
-
-<main class="main-content">
-    <div class="container">
-        <div class="page-header">
+        <div class="page-header" style="display:flex; align-items:center; gap:16px;">
+            <?php if ($_SESSION['role'] === 'admin'): ?>
+            <button onclick="history.back()" class="btn btn-secondary" style="border:1px solid var(--border); background:var(--surface);">
+                <i class="fa fa-arrow-left"></i> Kembali
+            </button>
+            <?php endif; ?>
             <div>
                 <h1><i class="fa fa-chalkboard"></i> Kelola Absensi Kelas</h1>
                 <p>Pantau dan kelola absensi siswa</p>
@@ -366,12 +364,6 @@ function exportExcel() {
     link.setAttribute('download', 'Absensi_<?php echo $selectedClass; ?>_<?php echo date('Y-m-d'); ?>.csv');
     link.click();
 }
-
-window.addEventListener('load', () => {
-    document.getElementById('pageLoader').style.display = 'none';
-});
 </script>
 
-<script src="assets/js/app.js"></script>
-</body>
-</html>
+<?php require_once 'includes/layout-wrapper-end.php'; ?>

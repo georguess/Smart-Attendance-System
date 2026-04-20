@@ -1,0 +1,5 @@
+<?php
+// assets/images/default-avatar.png
+// This is a placeholder file. A real default avatar image should be placed here.
+// For now, we can assume a default image exists at this path.
+// You can generate or download a simple avatar icon and save it as default-avatar.png in the assets/images/ directory.

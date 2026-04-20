@@ -31,38 +31,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $students = getMockStudents(); // or fetch from DB if available
+
+$pageTitle = 'Daftar RFID';
+require_once 'includes/layout-wrapper-start.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar RFID – SMAN 1 Pringsewu</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
 
-<div id="pageLoader" class="page-loader"><div class="loader-ring"></div></div>
-<div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-<?php include 'includes/header.php'; ?>
-
-<main class="main-content">
-    <div class="container">
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fa fa-id-card"></i> Daftar RFID untuk Siswa</h2>
+        <div class="page-header" style="display:flex; align-items:center; gap:16px;">
+            <button onclick="history.back()" class="btn btn-secondary" style="border:1px solid var(--border); background:var(--surface);">
+                <i class="fa fa-arrow-left"></i> Kembali
+            </button>
+            <div>
+                <h1><i class="fa fa-id-card"></i> Daftar RFID untuk Siswa</h1>
             </div>
+        </div>
+
+        <div class="card">
             <div class="card-body">
                 <?php if ($message): ?>
                     <div class="alert alert-info"><?php echo $message; ?></div>
                 <?php endif; ?>
                 <form method="POST">
-                    <div class="form-group">
-                        <label for="student_id">Pilih Siswa:</label>
-                        <select name="student_id" id="student_id" required>
+                    <div class="form-group" style="margin-bottom:1rem;">
+                        <label for="student_id" style="margin-bottom:0.5rem; display:block;">Pilih Siswa:</label>
+                        <select name="student_id" id="student_id" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border);">
                             <option value="">-- Pilih Siswa --</option>
                             <?php foreach ($students as $student): ?>
                                 <option value="<?php echo $student['student_id']; ?>">
@@ -71,17 +62,13 @@ $students = getMockStudents(); // or fetch from DB if available
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="rfid_tag">RFID Tag:</label>
-                        <input type="text" name="rfid_tag" id="rfid_tag" placeholder="Masukkan RFID Tag" required>
+                    <div class="form-group" style="margin-bottom:1rem;">
+                        <label for="rfid_tag" style="margin-bottom:0.5rem; display:block;">RFID Tag:</label>
+                        <input type="text" name="rfid_tag" id="rfid_tag" placeholder="Masukkan RFID Tag" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border);">
                     </div>
-                    <button type="submit" class="btn btn-primary">Daftar RFID</button>
+                    <button type="submit" class="btn btn-primary" style="width:100%;">Daftar RFID</button>
                 </form>
             </div>
         </div>
-    </div>
-</main>
 
-<script src="assets/js/app.js"></script>
-</body>
-</html>
+<?php require_once 'includes/layout-wrapper-end.php'; ?>

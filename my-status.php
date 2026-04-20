@@ -8,6 +8,8 @@ if ($role !== 'student' && $role !== 'admin') {
     exit;
 }
 
+$pageTitle = 'Status Saya';
+
 // Mock student profile (logged in student)
 $student = [
     'name'       => 'Ahmad Fauzi',
@@ -26,206 +28,311 @@ $weekly = [
 ];
 
 $monthSummary = ['present'=>18,'late'=>3,'absent'=>1,'total'=>22];
+
+require_once 'includes/layout-wrapper-start.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Status Saya – SMAN 1 Gadingrejo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
-
-<div id="pageLoader" class="page-loader"><div class="loader-ring"></div></div>
-<div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-<aside id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <div class="logo-big">S1G</div>
-        <div><h2>SMAN 1 Gadingrejo</h2><p>Smart Attendance System</p></div>
-        <button id="sidebarClose" class="sidebar-close"><i class="fa fa-xmark"></i></button>
-    </div>
-    <nav class="sidebar-nav">
-        <div class="sidebar-section">Menu Utama</div>
-        <a href="dashboard.php?role=student"><i class="fa fa-gauge"></i> Dashboard</a>
-        <a href="my-status.php?role=student" class="active"><i class="fa fa-id-card"></i> Status Saya</a>
-        <a href="#"><i class="fa fa-clock-rotate-left"></i> Activity Logs</a>
-        <div class="sidebar-section">Akun</div>
-        <a href="login.php"><i class="fa fa-right-from-bracket"></i> Logout</a>
-    </nav>
-    <div class="sidebar-footer">Smart Attendance v1.0 • SMAN 1 Pringsewu</div>
-</aside>
-
-<header class="navbar">
-    <button id="hamburgerBtn" class="hamburger"><span></span><span></span><span></span></button>
-    <div class="brand">
-        <div class="logo-circle">S1P</div>
-        <div><h1>SMAN 1 Pringsewu</h1><p>My Status</p></div>
-    </div>
-    <div class="nav-right">
-        <div class="clock-box">
-            <div class="date" id="clock-date"></div>
-            <div class="time" id="clock-time"></div>
-        </div>
-        <span class="badge-role badge-student"><span class="badge-dot"></span> Student</span>
-    </div>
-</header>
 
 <div class="page-wrapper">
 <main class="main-content fade-in">
 
     <!-- PROFILE CARD -->
     <div class="profile-card">
-        <div class="profile-avatar-lg">AF</div>
+        <div class="profile-avatar-lg" id="profile-initials"></div>
         <div class="profile-info">
-            <h2><?= htmlspecialchars($student['name']) ?></h2>
-            <p>NIS: <?= $student['student_id'] ?></p>
+            <h2 id="student-name">Memuat...</h2>
+            <p>NIS: <span id="student-nis">Memuat...</span></p>
             <div class="student-class">
-                <span class="profile-badge"><i class="fa fa-school"></i> <?= $student['class'] ?></span>
-                <?php
-                $pillCls = 'pill-'.$student['status'];
-                $statusLabel = match($student['status']) {
-                    'present'=>'Hadir','late'=>'Terlambat','absent'=>'Tidak Hadir',default=>'Belum Check'
-                };
-                ?>
-                <span class="profile-badge"><i class="fa fa-clock"></i> Check-in: <?= $student['check_in'] ?> WIB</span>
+                <span class="profile-badge"><i class="fa fa-school"></i> <span id="student-class">Memuat...</span></span>
+                <span class="profile-badge"><i class="fa fa-clock"></i> Check-in: <span id="student-checkin-time">--:--</span> WIB</span>
             </div>
         </div>
-        <div style="margin-left:auto;text-align:center">
-            <div style="font-size:11px;opacity:.8;margin-bottom:6px">Status Hari Ini</div>
-            <span class="status-pill <?= $pillCls ?>" style="font-size:14px;padding:8px 18px"><?= $statusLabel ?></span>
+        <div class="profile-status-box">
+             <div class="status-label">Status Hari Ini</div>
+             <span id="today-status-pill" class="status-pill pill-loading">Memuat...</span>
+        </div>
+        <div id="proof-of-attendance-container" class="proof-container">
+            <!-- Tombol bukti kehadiran akan dimuat di sini oleh JS -->
         </div>
     </div>
 
     <div class="content-grid">
-        <!-- LEFT COLUMN -->
-        <div style="display:flex;flex-direction:column;gap:24px">
-
-            <!-- WEEKLY SUMMARY -->
+        <!-- Kolom Kiri -->
+        <div class="status-left-col">
+            <!-- REKAP MINGGUAN -->
             <div class="card">
                 <div class="card-header">
-                    <i class="fa fa-calendar-week" style="color:var(--primary)"></i>
-                    <h3>Rekap Mingguan</h3>
+                    <i class="fa fa-chart-pie" style="color:var(--primary)"></i>
+                    <h3>Rekap Kehadiran Minggu Ini</h3>
                 </div>
-                <div class="card-body">
-                    <div class="weekly-grid">
-                        <?php foreach ($weekly as $w):
-                            $color = match($w['status']) {
-                                'present'=>'var(--success)','late'=>'var(--warning)','absent'=>'var(--danger)',default=>'var(--muted)'
-                            };
-                            $sLabel = match($w['status']) {
-                                'present'=>'H','late'=>'T','absent'=>'A',default=>'?'
-                            };
-                        ?>
-                        <div class="week-day">
-                            <div class="week-day-label"><?= $w['day'] ?></div>
-                            <div class="week-day-bar-wrap">
-                                <div class="week-day-bar <?= $w['status'] ?>" style="height:<?= $w['h'] ?>%;background:<?= $color ?>"></div>
-                            </div>
-                            <div class="week-day-status" style="color:<?= $color ?>"><?= $sLabel ?></div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <div style="display:flex;gap:16px;justify-content:center;margin-top:16px;font-size:11px;">
-                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--success);margin-right:4px"></span>Hadir</span>
-                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--warning);margin-right:4px"></span>Terlambat</span>
-                        <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--danger);margin-right:4px"></span>Tidak Hadir</span>
-                    </div>
+                <div class="card-body" style="height: 280px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="weekly-recap-chart"></canvas>
+                    <div id="weekly-recap-placeholder" class="loading-placeholder">Memuat data chart...</div>
                 </div>
             </div>
 
-            <!-- MONTHLY SUMMARY -->
+            <!-- REKAP BULANAN -->
             <div class="card">
                 <div class="card-header">
-                    <i class="fa fa-calendar" style="color:var(--info)"></i>
-                    <h3>Rekap Bulan Ini</h3>
-                    <span style="margin-left:auto;font-size:11px;color:var(--muted)"><?= date('F Y') ?></span>
+                    <i class="fa fa-calendar-alt" style="color:var(--info)"></i>
+                    <h3>Statistik Bulan Ini (<?= date('F Y') ?>)</h3>
                 </div>
-                <div class="card-body">
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
-                        <div style="text-align:center;padding:16px;background:var(--bg);border-radius:10px">
-                            <div style="font-size:28px;font-weight:800;color:var(--success)"><?= $monthSummary['present'] ?></div>
-                            <div style="font-size:11px;color:var(--muted);font-weight:600">Hadir</div>
-                        </div>
-                        <div style="text-align:center;padding:16px;background:var(--bg);border-radius:10px">
-                            <div style="font-size:28px;font-weight:800;color:var(--warning)"><?= $monthSummary['late'] ?></div>
-                            <div style="font-size:11px;color:var(--muted);font-weight:600">Terlambat</div>
-                        </div>
-                        <div style="text-align:center;padding:16px;background:var(--bg);border-radius:10px">
-                            <div style="font-size:28px;font-weight:800;color:var(--danger)"><?= $monthSummary['absent'] ?></div>
-                            <div style="font-size:11px;color:var(--muted);font-weight:600">Tidak Hadir</div>
-                        </div>
-                    </div>
-                    <!-- Progress bar -->
-                    <?php $pct = round(($monthSummary['present'] / $monthSummary['total']) * 100); ?>
-                    <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Tingkat Kehadiran: <strong style="color:var(--success)"><?= $pct ?>%</strong></div>
-                    <div style="background:var(--border);border-radius:99px;height:8px;overflow:hidden">
-                        <div style="width:<?= $pct ?>%;height:100%;background:linear-gradient(90deg,var(--success),#34d399);border-radius:99px;transition:width .5s ease"></div>
-                    </div>
-                    <div style="font-size:11px;color:var(--muted);margin-top:8px">Total <?= $monthSummary['total'] ?> hari efektif</div>
+                <div id="monthly-stats-body" class="card-body">
+                     <div class="loading-placeholder">Memuat statistik bulanan...</div>
                 </div>
             </div>
         </div>
 
-        <!-- TIMELINE -->
-        <div class="card" style="height:fit-content">
+        <!-- Kolom Kanan (Timeline) -->
+        <div class="card">
             <div class="card-header">
                 <i class="fa fa-timeline" style="color:var(--secondary)"></i>
-                <h3>Activity Timeline</h3>
+                <h3>Activity Timeline (Minggu Ini)</h3>
             </div>
-            <div class="card-body">
-                <div class="timeline">
-                    <div class="timeline-item present">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-time">Jumat, 29 Mar 2026 • 07:15</div>
-                        <div class="timeline-label">Check-in – Hadir ✅</div>
-                    </div>
-                    <div class="timeline-item late">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-time">Kamis, 28 Mar 2026 • 07:48</div>
-                        <div class="timeline-label">Check-in – Terlambat ⚠️</div>
-                    </div>
-                    <div class="timeline-item present">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-time">Rabu, 27 Mar 2026 • 07:12</div>
-                        <div class="timeline-label">Check-in – Hadir ✅</div>
-                    </div>
-                    <div class="timeline-item present">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-time">Selasa, 26 Mar 2026 • 07:05</div>
-                        <div class="timeline-label">Check-in – Hadir ✅</div>
-                    </div>
-                    <div class="timeline-item absent">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-time">Senin, 25 Mar 2026 • --:--</div>
-                        <div class="timeline-label">Tidak Hadir ❌</div>
-                    </div>
-                    <div class="timeline-item present">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-time">Jumat, 22 Mar 2026 • 07:20</div>
-                        <div class="timeline-label">Check-in – Hadir ✅</div>
-                    </div>
-                    <div class="timeline-item present">
-                        <div class="timeline-dot"></div>
-                        <div class="timeline-time">Kamis, 21 Mar 2026 • 07:18</div>
-                        <div class="timeline-label">Check-in – Hadir ✅</div>
-                    </div>
-                </div>
+            <div id="weekly-timeline-body" class="card-body">
+                <div class="loading-placeholder">Memuat timeline mingguan...</div>
             </div>
         </div>
     </div>
 
 </main>
-<footer class="site-footer">
-    <h4>Smart Attendance Monitoring System</h4>
-    <p>Powered by ESP32-S3 CAM (OV2640) • IoT Technology</p>
-    <p class="footer-copy">© <?= date('Y') ?> SMAN 1 Pringsewu • All rights reserved</p>
-</footer>
+
+<!-- Modal Bukti Kehadiran -->
+<div id="photo-proof-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Bukti Kehadiran Foto</h3>
+            <button id="close-modal-btn" class="close-btn">&times;</button>
+        </div>
+        <div id="modal-body" class="modal-body">
+            <img id="attendance-photo" src="" alt="Bukti Kehadiran" style="width: 100%; height: auto; border-radius: 8px;">
+            <p id="no-photo-message" style="text-align: center; padding: 40px 0;"></p>
+        </div>
+    </div>
 </div>
 
-<script src="assets/js/app.js"></script>
+
+<?php require_once 'includes/layout-wrapper-end.php'; ?>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const studentNameEl = document.getElementById('student-name');
+    const studentNisEl = document.getElementById('student-nis');
+    const studentClassEl = document.getElementById('student-class');
+    const studentCheckinEl = document.getElementById('student-checkin-time');
+    const profileInitialsEl = document.getElementById('profile-initials');
+    const todayStatusPillEl = document.getElementById('today-status-pill');
+    
+    const proofContainer = document.getElementById('proof-of-attendance-container');
+    const weeklyChartCtx = document.getElementById('weekly-recap-chart').getContext('2d');
+    const weeklyChartPlaceholder = document.getElementById('weekly-recap-placeholder');
+    const monthlyStatsBody = document.getElementById('monthly-stats-body');
+    const weeklyTimelineBody = document.getElementById('weekly-timeline-body');
+
+    // Modal elements
+    const photoModal = document.getElementById('photo-proof-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const attendancePhotoEl = document.getElementById('attendance-photo');
+    const noPhotoMessageEl = document.getElementById('no-photo-message');
+
+    let weeklyChart;
+
+    function getInitials(name) {
+        if (!name) return '';
+        const parts = name.split(' ');
+        if (parts.length > 1) {
+            return parts[0][0] + parts[1][0];
+        }
+        return name.substring(0, 2);
+    }
+
+    function renderProofButton(photoPath) {
+        proofContainer.innerHTML = ''; // Clear previous content
+        const button = document.createElement('button');
+        button.className = 'btn btn-primary';
+        button.innerHTML = '<i class="fa fa-camera"></i> Bukti Kehadiran';
+        
+        button.addEventListener('click', () => {
+            if (photoPath) {
+                attendancePhotoEl.src = photoPath;
+                attendancePhotoEl.style.display = 'block';
+                noPhotoMessageEl.style.display = 'none';
+            } else {
+                attendancePhotoEl.style.display = 'none';
+                noPhotoMessageEl.textContent = 'Belum ada foto untuk hari ini.';
+                noPhotoMessageEl.style.display = 'block';
+            }
+            photoModal.style.display = 'flex';
+        });
+        proofContainer.appendChild(button);
+    }
+
+    function renderWeeklyChart(recapData) {
+        weeklyChartPlaceholder.style.display = 'none';
+        const data = {
+            labels: ['Hadir', 'Terlambat', 'Izin', 'Sakit', 'Alpa'],
+            datasets: [{
+                label: 'Jumlah Hari',
+                data: [
+                    recapData.Hadir,
+                    recapData.Terlambat,
+                    recapData.Izin,
+                    recapData.Sakit,
+                    recapData.Alpa
+                ],
+                backgroundColor: [
+                    '#10b981', // Hadir
+                    '#f59e0b', // Terlambat
+                    '#3b82f6', // Izin
+                    '#6366f1', // Sakit
+                    '#ef4444'  // Alpa
+                ],
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                borderWidth: 2,
+                hoverOffset: 8
+            }]
+        };
+
+        if(weeklyChart) weeklyChart.destroy();
+
+        weeklyChart = new Chart(weeklyChartCtx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { family: 'Poppins', size: 11 },
+                            padding: 16,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        titleFont: { family: 'Poppins', weight: 'bold' },
+                        bodyFont: { family: 'Poppins' },
+                        padding: 10,
+                        cornerRadius: 6
+                    }
+                }
+            }
+        });
+    }
+
+    function renderMonthlyStats(stats) {
+        const total = stats.hadir + stats.terlambat + stats.tidak_hadir;
+        const attendancePercentage = total > 0 ? Math.round((stats.hadir / total) * 100) : 0;
+
+        monthlyStatsBody.innerHTML = `
+            <div class="monthly-stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" style="color:var(--success)">${stats.hadir}</div>
+                    <div class="stat-label">Hadir</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="color:var(--warning)">${stats.terlambat}</div>
+                    <div class="stat-label">Terlambat</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="color:var(--danger)">${stats.tidak_hadir}</div>
+                    <div class="stat-label">Tidak Hadir</div>
+                </div>
+            </div>
+            <div class="progress-bar-info">
+                <span>Tingkat Kehadiran: <strong>${attendancePercentage}%</strong></span>
+                <span>Total Hari Efektif: ${total}</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: ${attendancePercentage}%;"></div>
+            </div>
+        `;
+    }
+
+    function renderWeeklyTimeline(timeline) {
+        if (timeline.length === 0) {
+            weeklyTimelineBody.innerHTML = '<div class="placeholder">Tidak ada data timeline untuk minggu ini.</div>';
+            return;
+        }
+        
+        let timelineHTML = '<div class="timeline">';
+        timeline.forEach(item => {
+            const statusClass = item.status || 'no_record';
+            const timeDisplay = item.time ? `&bull; ${item.time}` : '';
+            timelineHTML += `
+                <div class="timeline-item ${statusClass}">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-day-date">
+                            <strong>${item.day}</strong>, ${item.date}
+                        </div>
+                        <div class="timeline-status">
+                            ${item.status_text} ${timeDisplay}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        timelineHTML += '</div>';
+        weeklyTimelineBody.innerHTML = timelineHTML;
+    }
+
+    // Fetch data from API
+    fetch('api/student-status.php')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Gagal mengambil data. Status: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Populate profile card
+            studentNameEl.textContent = '<?= htmlspecialchars($_SESSION['name'] ?? 'Siswa') ?>';
+            studentNisEl.textContent = '<?= htmlspecialchars($_SESSION['student_id'] ?? 'N/A') ?>';
+            studentClassEl.textContent = '<?= htmlspecialchars($_SESSION['class'] ?? 'N/A') ?>';
+            profileInitialsEl.textContent = getInitials('<?= htmlspecialchars($_SESSION['name'] ?? '') ?>');
+
+            // Find today's status from timeline
+            const today = new Date().toISOString().slice(0, 10);
+            const todayRecord = data.weekly_timeline.find(item => new Date(item.date + " " + new Date().getFullYear()).toISOString().slice(0,10) === today);
+            
+            if (todayRecord) {
+                studentCheckinEl.textContent = todayRecord.time || '--:--';
+                todayStatusPillEl.textContent = todayRecord.status_text;
+                todayStatusPillEl.className = `status-pill pill-${todayRecord.status}`;
+            } else {
+                 todayStatusPillEl.textContent = 'Belum Ada Data';
+                 todayStatusPillEl.className = 'status-pill pill-no_record';
+            }
+
+
+            // Render components
+            renderProofButton(data.today_photo_path);
+            renderWeeklyChart(data.weekly_recap);
+            renderMonthlyStats(data.monthly_stats);
+            renderWeeklyTimeline(data.weekly_timeline);
+        })
+        .catch(error => {
+            console.error('Error fetching student status:', error);
+            weeklyChartPlaceholder.textContent = 'Gagal memuat data chart.';
+            monthlyStatsBody.innerHTML = '<div class="error-placeholder">Gagal memuat statistik.</div>';
+            weeklyTimelineBody.innerHTML = '<div class="error-placeholder">Gagal memuat timeline.</div>';
+        });
+
+    // Modal close logic
+    closeModalBtn.addEventListener('click', () => photoModal.style.display = 'none');
+    window.addEventListener('click', (event) => {
+        if (event.target == photoModal) {
+            photoModal.style.display = 'none';
+        }
+    });
+});
+</script>
 </body>
 </html>

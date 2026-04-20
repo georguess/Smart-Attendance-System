@@ -4,12 +4,35 @@ require_once 'config/database.php';
 
 $role = $_GET['role'] ?? $_SESSION['role'] ?? 'teacher';
 if (!in_array($role, ['teacher','admin'])) {
-    header('Location: dashboard.php?role='.$role);
+    header('Location: dashboard.php');
     exit;
 }
 
-$selectedClass = $_GET['class'] ?? 'XII IPA 1';
-$classes = ['XII IPA 1','XII IPA 2','XII IPS 1','XII IPS 2','XI IPA 1','XI IPA 2'];
+// Teacher's class logic (Prompt 6 restriction: Guru hanya melihat kelas yang dia walikan)
+$conn = getDB();
+$teacher_classes = [];
+if ($role === 'teacher' && isset($_SESSION['user_id'])) {
+    $stmt = $conn->prepare("SELECT class_name FROM teachers WHERE user_id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $teacher = $stmt->fetch();
+    if ($teacher && $teacher['class_name']) {
+        $teacher_classes[] = $teacher['class_name'];
+    }
+}
+
+// Build classes options
+if ($role === 'admin' || empty($teacher_classes)) {
+    $classes = ['XII IPA 1','XII IPA 2','XII IPS 1','XII IPS 2','XI IPA 1','XI IPA 2'];
+} else {
+    $classes = $teacher_classes;
+}
+
+$selectedClass = $_GET['class'] ?? $classes[0];
+// Force selected class to be within allowed classes if teacher
+if ($role === 'teacher' && !in_array($selectedClass, $classes)) {
+    $selectedClass = $classes[0] ?? '';
+}
+
 $attendance = getMockAttendance();
 
 // Filter by class
@@ -18,66 +41,17 @@ $classTotal   = count($classStudents);
 $classPresent = count(array_filter($classStudents, fn($s) => $s['status']==='present'));
 $classLate    = count(array_filter($classStudents, fn($s) => $s['status']==='late'));
 $classAbsent  = count(array_filter($classStudents, fn($s) => $s['status']==='absent'));
+
+$pageTitle = 'Class Monitoring';
+require_once 'includes/layout-wrapper-start.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Class Monitoring – SMAN 1 Gadingrejo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
-
-<div id="pageLoader" class="page-loader"><div class="loader-ring"></div></div>
-<div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-<aside id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <div class="logo-big">S1G</div>
-        <div><h2>SMAN 1 Gadingrejo</h2><p>Smart Attendance System</p></div>
-        <button id="sidebarClose" class="sidebar-close"><i class="fa fa-xmark"></i></button>
-    </div>
-    <nav class="sidebar-nav">
-        <div class="sidebar-section">Menu Utama</div>
-        <a href="dashboard.php?role=<?= $role ?>"><i class="fa fa-gauge"></i> Dashboard</a>
-        <a href="classes.php?role=<?= $role ?>" class="active"><i class="fa fa-chalkboard"></i> Class Monitoring</a>
-        <a href="#"><i class="fa fa-clock-rotate-left"></i> Activity Logs</a>
-        <?php if ($role === 'admin'): ?>
-        <a href="#"><i class="fa fa-users"></i> Student Management</a>
-        <?php endif; ?>
-        <a href="#"><i class="fa fa-gear"></i> Settings</a>
-        <div class="sidebar-section">Akun</div>
-        <a href="login.php"><i class="fa fa-right-from-bracket"></i> Logout</a>
-    </nav>
-    <div class="sidebar-footer">Smart Attendance v1.0 • SMAN 1 Gadingrejo</div>
-</aside>
-
-<header class="navbar">
-    <button id="hamburgerBtn" class="hamburger"><span></span><span></span><span></span></button>
-    <div class="brand">
-        <div class="logo-circle">S1G</div>
-        <div><h1>SMAN 1 Gadingrejo</h1><p>Class Monitoring</p></div>
-    </div>
-    <div class="nav-right">
-        <div class="clock-box">
-            <div class="date" id="clock-date"></div>
-            <div class="time" id="clock-time"></div>
-        </div>
-        <span class="badge-role badge-<?= $role ?>">
-            <span class="badge-dot"></span> <?= ucfirst($role) ?>
-        </span>
-    </div>
-</header>
-
-<div class="page-wrapper">
-<main class="main-content fade-in">
 
     <!-- PAGE HEADER -->
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
         <div>
+            <a href="javascript:history.back()" class="btn btn-outline btn-sm" style="margin-bottom: 12px;">
+                <i class="fa fa-arrow-left"></i> Kembali
+            </a>
             <h2 style="font-size:20px;font-weight:800">Class Monitoring</h2>
             <p style="font-size:13px;color:var(--muted)">Monitor kehadiran per kelas • <?= date('d F Y') ?></p>
         </div>
@@ -206,15 +180,6 @@ $classAbsent  = count(array_filter($classStudents, fn($s) => $s['status']==='abs
         </div>
     </div>
 
-</main>
-<footer class="site-footer">
-    <h4>Smart Attendance Monitoring System</h4>
-    <p>Powered by ESP32-S3 CAM (OV2640) • IoT Technology</p>
-    <p class="footer-copy">© <?= date('Y') ?> SMAN 1 Gadingrejo • All rights reserved</p>
-</footer>
-</div>
-
-<script src="assets/js/app.js"></script>
 <script>
 function exportTable(type) {
     if (type === 'print') {
@@ -235,5 +200,5 @@ function exportTable(type) {
     }
 }
 </script>
-</body>
-</html>
+
+<?php require_once 'includes/layout-wrapper-end.php'; ?>

@@ -50,41 +50,16 @@ if (empty($allStudents)) {
 
 // Get tab
 $tab = $_GET['tab'] ?? 'overview';
+
+$pageTitle = 'Admin Panel';
+require_once 'includes/layout-wrapper-start.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard – SMAN 1 GADINGREJO</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
 
-<div id="pageLoader" class="page-loader"><div class="loader-ring"></div></div>
-<div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-<aside id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <div class="logo-big"><?php echo $schoolInfo['shortname']; ?></div>
-        <div><h2><?php echo $schoolInfo['name']; ?></h2><p>Smart Attendance System</p></div>
-        <button id="sidebarClose" class="sidebar-close"><i class="fa fa-xmark"></i></button>
-    </div>
-    <nav class="sidebar-nav">
-        <div class="sidebar-section">Menu Utama</div>
-        <a href="dashboard.php"><i class="fa fa-gauge"></i> Dashboard</a>
-        <a href="admin.php" class="active"><i class="fa fa-shield"></i> Admin Panel</a>
-        <a href="settings.php"><i class="fa fa-gear"></i> Settings</a>
-        <a href="login.php"><i class="fa fa-right-from-bracket"></i> Logout</a>
-    </nav>
-</aside>
-
-<main class="main-content">
-    <div class="container">
         <div class="page-header">
             <div>
+                <a href="dashboard.php" class="btn btn-outline btn-sm" style="margin-bottom: 12px;">
+                    <i class="fa fa-arrow-left"></i> Kembali
+                </a>
                 <h1><i class="fa fa-shield"></i> Admin Dashboard</h1>
                 <p>Kelola siswa, guru, dan kelas</p>
             </div>
@@ -201,9 +176,9 @@ $tab = $_GET['tab'] ?? 'overview';
         <div class="card">
             <div class="card-header">
                 <h3><i class="fa fa-users"></i> Daftar Siswa (<?php echo count($allStudents); ?>)</h3>
-                <button onclick="alert('Fitur tambah siswa akan ditambahkan')" class="btn btn-primary" style="margin-left: auto;">
-                    <i class="fa fa-plus"></i> Tambah Siswa
-                </button>
+                <a href="manage-students.php" class="btn btn-primary" style="margin-left: auto;">
+                    <i class="fa fa-plus"></i> Tambah Siswa (Buka Cepat)
+                </a>
             </div>
             <div class="card-body" style="padding: 0;">
                 <div style="overflow-x: auto;">
@@ -255,7 +230,7 @@ $tab = $_GET['tab'] ?? 'overview';
                 <h3><i class="fa fa-chalkboard"></i> Manajemen Kelas</h3>
             </div>
             <div class="card-body">
-                <p style="color: var(--muted); margin-bottom: 1rem;">Setiap kelas bisa diassign ke guru/wali kelas tertentu.</p>
+                <p style="color: var(--muted); margin-bottom: 1rem;">Setiap kelas bisa diassign ke guru/wali kelas tertentu dari halaman Manajemen Guru.</p>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
                     <?php foreach ($allClasses as $class): 
                         $classStudentCount = count(array_filter($allStudents, fn($s) => $s['class'] === $class));
@@ -267,9 +242,9 @@ $tab = $_GET['tab'] ?? 'overview';
                         <p style="margin: 0; font-size: 12px; color: var(--muted);">
                             👥 <?php echo $classStudentCount; ?> Siswa
                         </p>
-                        <button onclick="alert('Assign guru ke kelas')" class="btn btn-primary" style="width: 100%; margin-top: 1rem; cursor: pointer;">
+                        <a href="manage-teachers.php" class="btn btn-primary" style="width: 100%; margin-top: 1rem; cursor: pointer; text-decoration: none; text-align: center; display: inline-block;">
                             <i class="fa fa-user-tie"></i> Assign Guru
-                        </button>
+                        </a>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -399,12 +374,4 @@ $tab = $_GET['tab'] ?? 'overview';
 }
 </style>
 
-<script>
-window.addEventListener('load', () => {
-    document.getElementById('pageLoader').style.display = 'none';
-});
-</script>
-
-<script src="assets/js/app.js"></script>
-</body>
-</html>
+<?php require_once 'includes/layout-wrapper-end.php'; ?>

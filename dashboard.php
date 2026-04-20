@@ -27,106 +27,8 @@ $roleLabels = [
 $rl = $roleLabels[$role];
 
 $pageTitle = 'Dashboard';
+require_once 'includes/layout-wrapper-start.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard – SMAN 1 Gadingrejo</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
-
-<!-- LOADER -->
-<div id="pageLoader" class="page-loader">
-    <div class="loader-ring"></div>
-</div>
-
-<!-- SIDEBAR OVERLAY -->
-<div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-<!-- SIDEBAR -->
-<aside id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <div class="logo-big">S1G</div>
-        <div>
-            <h2>SMAN 1 Gadingrejo</h2>
-            <p>Smart Attendance System</p>
-        </div>
-        <button id="sidebarClose" class="sidebar-close"><i class="fa fa-xmark"></i></button>
-    </div>
-    <nav class="sidebar-nav">
-        <div class="sidebar-section">Menu Utama</div>
-        <a href="dashboard.php"><i class="fa fa-gauge"></i> Dashboard</a>
-
-        <?php if ($role === 'guest'): ?>
-            <a href="login.php"><i class="fa fa-right-to-bracket"></i> Login</a>
-            <a href="index.php"><i class="fa fa-house"></i> Beranda</a>
-
-        <?php elseif ($role === 'student'): ?>
-            <a href="my-status.php"><i class="fa fa-id-card"></i> Status Saya</a>
-            <a href="history.php"><i class="fa fa-history"></i> Riwayat Kehadiran</a>
-            <a href="settings.php"><i class="fa fa-gear"></i> Settings</a>
-            <div class="sidebar-section">Akun</div>
-            <a href="login.php"><i class="fa fa-right-from-bracket"></i> Logout</a>
-
-        <?php elseif ($role === 'teacher'): ?>
-            <a href="teacher.php"><i class="fa fa-chalkboard"></i> Kelola Absensi</a>
-            <a href="settings.php"><i class="fa fa-gear"></i> Settings</a>
-            <div class="sidebar-section">Akun</div>
-            <a href="login.php"><i class="fa fa-right-from-bracket"></i> Logout</a>
-
-        <?php elseif ($role === 'admin'): ?>
-            <a href="admin.php"><i class="fa fa-shield"></i> Admin Panel</a>
-            <a href="settings.php"><i class="fa fa-gear"></i> Settings</a>
-            <div class="sidebar-section">Akun</div>
-            <a href="login.php"><i class="fa fa-right-from-bracket"></i> Logout</a>
-        <?php endif; ?>
-    </nav>
-    <div class="sidebar-footer">
-        Smart Attendance v1.0 &nbsp;•&nbsp; SMAN 1 Gadingrejo
-    </div>
-</aside>
-
-<!-- NAVBAR -->
-<header class="navbar">
-    <button id="hamburgerBtn" class="hamburger" aria-label="Menu">
-        <span></span><span></span><span></span>
-    </button>
-    <div class="brand">
-        <div class="logo-circle">S1G</div>
-        <div>
-            <h1>SMAN 1 Gadingrejo</h1>
-            <p>Attendance Dashboard</p>
-        </div>
-    </div>
-    <div class="nav-right">
-        <div class="clock-box">
-            <div class="date" id="clock-date"></div>
-            <div class="time" id="clock-time"></div>
-        </div>
-        <?php if ($_SESSION['username'] ?? null): ?>
-            <span style="font-size:12px;color:var(--muted);padding:6px 12px;border-radius:6px;background:var(--surface);">
-                <i class="fa fa-user-circle"></i> <?= htmlspecialchars($_SESSION['name'] ?? $_SESSION['username']) ?>
-            </span>
-        <?php endif; ?>
-        <span class="badge-role <?= $rl['class'] ?>">
-            <span class="badge-dot"></span> <?= $rl['label'] ?>
-        </span>
-        <?php if ($role === 'guest'): ?>
-            <a href="login.php" class="btn btn-primary btn-sm">
-                <i class="fa fa-right-to-bracket"></i> Login untuk Akses Penuh
-            </a>
-        <?php endif; ?>
-    </div>
-</header>
-
-<!-- MAIN -->
-<div class="page-wrapper">
-<main class="main-content fade-in">
 
     <?php if ($role === 'guest'): ?>
     <!-- GUEST NOTICE -->
@@ -360,23 +262,10 @@ $pageTitle = 'Dashboard';
     </div>
     <?php endif; ?>
 
-</main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script>
+    const weeklyData = <?= json_encode($weeklyData) ?>;
+    initAttendanceChart(weeklyData);
+    </script>
 
-<!-- FOOTER -->
-<footer class="site-footer">
-    <h4>Smart Attendance Monitoring System</h4>
-    <p>Powered by ESP32-S3 CAM (OV2640) • IoT Technology</p>
-    <hr class="footer-divider">
-    <p>Developed by <strong>Himpunan Mahasiswa Teknik Elektro</strong><br>Faculty of Engineering • Universitas Lampung</p>
-    <p class="footer-copy">© <?= date('Y') ?> Universitas Lampung • All rights reserved</p>
-</footer>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="assets/js/app.js"></script>
-<script>
-const weeklyData = <?= json_encode($weeklyData) ?>;
-initAttendanceChart(weeklyData);
-</script>
-</body>
-</html>
+<?php require_once 'includes/layout-wrapper-end.php'; ?>

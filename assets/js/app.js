@@ -169,29 +169,4 @@ document.querySelectorAll('.sidebar-nav a').forEach(a => {
     }
 });
 
-// ── Activity feed auto-scroll ─────────────
-const feed = document.querySelector('.activity-feed');
-if (feed && feed.scrollHeight > feed.clientHeight) {
-    let scrollDir = 1;
-    let feedInterval;
-    const startFeedScroll = () => {
-        if (feedInterval) return;
-        feedInterval = setInterval(() => {
-            feed.scrollTop += scrollDir;
-            if (feed.scrollTop >= feed.scrollHeight - feed.clientHeight - 1) {
-                scrollDir = -1;
-            }
-            if (feed.scrollTop <= 0) {
-                scrollDir = 1;
-            }
-        }, 80);
-    };
-    const stopFeedScroll = () => {
-        clearInterval(feedInterval);
-        feedInterval = null;
-    };
 
-    feed.addEventListener('mouseenter', stopFeedScroll);
-    feed.addEventListener('mouseleave', startFeedScroll);
-    startFeedScroll();
-}

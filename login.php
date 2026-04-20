@@ -14,38 +14,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn = getDB();
         if ($conn) {
             try {
-                $stmt = $conn->prepare("SELECT u.id, u.role, u.student_id, s.name FROM users u 
+                $stmt = $conn->prepare("SELECT u.id, u.role, u.student_id, u.password, s.name FROM users u 
                                        LEFT JOIN students s ON u.student_id = s.student_id 
                                        WHERE u.username = ?");
                 $stmt->execute([$username]);
                 $user = $stmt->fetch();
 
                 if ($user) {
-                    if ($user['student_id'] && !preg_match('/^\d{8}$/', $password)) {
-                        $error = 'Password siswa harus berupa 8 digit angka (ddmmyyyy).';
-                    } else {
-                        $expectedPassword = 'admin123';
-                        if ($user['student_id']) {
-                            $stmtDob = $conn->prepare("SELECT date_of_birth FROM students WHERE student_id = ?");
-                            $stmtDob->execute([$user['student_id']]);
-                            $dobRow = $stmtDob->fetch();
-                            if ($dobRow && !empty($dobRow['date_of_birth'])) {
-                                $expectedPassword = date('dmY', strtotime($dobRow['date_of_birth']));
-                            } else {
-                                $expectedPassword = '';
+                    $isValidPassword = false;
+                    $storedPassword = (string) ($user['password'] ?? '');
+
+                    if ($storedPassword !== '') {
+                        // Support both hashed passwords and legacy plain-text passwords.
+                        $passwordInfo = password_get_info($storedPassword);
+                        if (!empty($passwordInfo['algo'])) {
+                            $isValidPassword = password_verify($password, $storedPassword);
+                        } else {
+                            $isValidPassword = hash_equals($storedPassword, $password);
+
+                            // Backward compatibility for old student password format (dd/mm/yyyy vs ddmmyyyy).
+                            if (!$isValidPassword && !empty($user['student_id'])) {
+                                $normalizedInput = preg_replace('/\D/', '', $password);
+                                $normalizedStored = preg_replace('/\D/', '', $storedPassword);
+                                if ($normalizedInput !== '' && $normalizedStored !== '') {
+                                    $isValidPassword = hash_equals($normalizedStored, $normalizedInput);
+                                }
                             }
                         }
+                    }
 
-                        if ($password === $expectedPassword) {
-                            $_SESSION['user_id'] = $user['id'];
-                            $_SESSION['username'] = $username;
-                            $_SESSION['role'] = $user['role'];
-                            $_SESSION['student_id'] = $user['student_id'];
-                            $_SESSION['name'] = $user['name'] ?? $username;
-
-                            header("Location: dashboard.php");
-                            exit;
+                    // Fallback for old data without users.password: derive from student DOB.
+                    if (!$isValidPassword && empty($storedPassword) && !empty($user['student_id'])) {
+                        $stmtDob = $conn->prepare("SELECT date_of_birth FROM students WHERE student_id = ?");
+                        $stmtDob->execute([$user['student_id']]);
+                        $dobRow = $stmtDob->fetch();
+                        if ($dobRow && !empty($dobRow['date_of_birth'])) {
+                            $expectedPassword = date('dmY', strtotime($dobRow['date_of_birth']));
+                            $isValidPassword = hash_equals($expectedPassword, $password);
                         }
+                    }
+
+                    if ($isValidPassword) {
+                        $_SESSION['user_id'] = $user['id'];
+                        $_SESSION['username'] = $username;
+                        $_SESSION['role'] = $user['role'];
+                        $_SESSION['student_id'] = $user['student_id'];
+                        $_SESSION['name'] = $user['name'] ?? $username;
+
+                        header("Location: dashboard.php");
+                        exit;
                     }
                 }
 
@@ -57,11 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Demo mode - hardcoded users
             $demoUsers = [
                 '2024001' => '15032006',
-                'guru001' => '20100101',
-                'admin' => '20240101',
+                'guru001' => 'guru123',
+                'admin' => 'admin123',
             ];
 
             if (isset($demoUsers[$username]) && $password === $demoUsers[$username]) {
+                $_SESSION['user_id'] = null;
                 $_SESSION['username'] = $username;
                 $_SESSION['role'] = ($username === 'admin') ? 'admin' : (($username === 'guru001') ? 'teacher' : 'student');
                 $_SESSION['student_id'] = ($username === '2024001') ? '2024001' : null;
@@ -110,21 +128,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <form method="POST">
             <div class="form-group">
-                <label><i class="fa fa-user" style="margin-right:5px;color:var(--primary)"></i> Username (NISN)</label>
-                <input type="text" name="username" class="form-control" placeholder="Masukkan NISN..." required autocomplete="username">
+                <label><i class="fa fa-user" style="margin-right:5px;color:var(--primary)"></i> Username</label>
+                <input type="text" name="username" class="form-control" placeholder="Masukkan username..." required autocomplete="username">
             </div>
             <div class="form-group">
                 <label><i class="fa fa-lock" style="margin-right:5px;color:var(--primary)"></i> Password (Tanggal Lahir: ddmmyyyy)</label>
-                <div style="position:relative">
-                    <input type="password" name="password" id="passInput" class="form-control" placeholder="Contoh: 15032006" required autocomplete="current-password" style="padding-right:40px">
-                    <button type="button" onclick="const inp = document.getElementById('passInput'); inp.type = inp.type === 'password' ? 'text' : 'password'; this.innerHTML = inp.type === 'password' ? '<i class=\"fa fa-eye\"></i>' : '<i class=\"fa fa-eye-slash\"></i>';" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;">
+                <div class="input-group">
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
                         <i class="fa fa-eye"></i>
                     </button>
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;">
-                <i class="fa fa-right-to-bracket"></i> Masuk ke Dashboard
-            </button>
+            <button type="submit" class="btn btn-primary w-100">Login</button>
         </form>
 
         <div class="login-divider">atau</div>
@@ -140,6 +156,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<script src="assets/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const togglePassword = document.getElementById('togglePassword');
+    if (togglePassword) {
+        togglePassword.addEventListener('click', function () {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            // Toggle the type
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Toggle the icon
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        });
+    }
+});
+</script>
 </body>
 </html>

@@ -3,11 +3,12 @@ session_start();
 require_once 'config/database.php';
 
 // Check if student
-if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'student' && $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['username']) || ($_SESSION['role'] !== 'student' && $_SESSION['role'] !== 'admin')) {
     header('Location: login.php');
     exit;
 }
 
+$pageTitle = 'Riwayat Kehadiran';
 $student_id = $_SESSION['student_id'] ?? null;
 $schoolInfo = getSchoolInfo();
 $currentDate = getCurrentDate();
@@ -61,43 +62,27 @@ if (empty($attendance)) {
 if (!$studentInfo) {
     $studentInfo = ['name' => 'Ahmad Fauzi', 'student_id' => '2024001', 'class' => 'XII IPA 1', 'gender' => 'L'];
 }
+
+require_once 'includes/layout-wrapper-start.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riwayat Kehadiran – SMAN 1 GADINGREJO</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body>
 
-<div id="pageLoader" class="page-loader"><div class="loader-ring"></div></div>
-<div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-<aside id="sidebar" class="sidebar">
-    <div class="sidebar-header">
-        <div class="logo-big"><?php echo $schoolInfo['shortname']; ?></div>
-        <div><h2><?php echo $schoolInfo['name']; ?></h2><p>Smart Attendance System</p></div>
-        <button id="sidebarClose" class="sidebar-close"><i class="fa fa-xmark"></i></button>
+<div class="container">
+    <div class="page-header">
+        <div>
+            <a href="javascript:history.back()" class="btn btn-outline btn-sm" style="margin-bottom: 16px;">
+                <i class="fa fa-arrow-left"></i> Kembali
+            </a>
+            <h1><i class="fa fa-history"></i> Riwayat Kehadiran</h1>
+            <p><?= getGenderEmoji($studentInfo['gender'] ?? 'L'); ?> <?= htmlspecialchars($studentInfo['name']); ?> | <?= htmlspecialchars($studentInfo['class']); ?></p>
+        </div>
+        <!-- Filter form here -->
     </div>
-    <nav class="sidebar-nav">
-        <div class="sidebar-section">Menu Utama</div>
-        <a href="dashboard.php"><i class="fa fa-gauge"></i> Dashboard</a>
-        <a href="history.php" class="active"><i class="fa fa-history"></i> Riwayat Kehadiran</a>
-        <a href="settings.php"><i class="fa fa-gear"></i> Settings</a>
-        <a href="login.php"><i class="fa fa-right-from-bracket"></i> Logout</a>
-    </nav>
-</aside>
 
-<main class="main-content">
-    <div class="container">
-        <div class="page-header">
-            <div>
-                <h1><i class="fa fa-history"></i> Riwayat Kehadiran</h1>
-                <p><?php echo getGenderEmoji($studentInfo['gender'] ?? 'L'); ?> <?php echo $studentInfo['name']; ?> | <?php echo $studentInfo['class']; ?></p>
+    <!-- Attendance table here -->
+    
+</div>
+
+<?php require_once 'includes/layout-wrapper-end.php'; ?>
             </div>
             <div class="date-display">
                 <span><?php echo date('d M Y', strtotime($currentDate)); ?></span>

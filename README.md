@@ -46,9 +46,11 @@ http://localhost:8080
 
 | Role    | Username | Password  |
 |---------|----------|-----------|
-| Student | siswa    | siswa123  |
-| Teacher | guru     | guru123   |
+| Student | 2024001  | 15032006  |
+| Teacher | guru001  | guru123   |
 | Admin   | admin    | admin123  |
+
+Catatan: Pada mode database, akun dibaca dari tabel `users` di PostgreSQL.
 
 ---
 
@@ -128,6 +130,11 @@ Sistem dirancang untuk menerima data dari ESP32-CAM:
 - Face recognition untuk auto check-in
 - Real-time data push ke database
 - Camera monitoring feed
+
+Endpoint API absensi:
+- `POST /api/attendance.php`
+- Payload minimal: `rfid_tag`
+- Payload opsional: `device_code`, `api_key`, `photo_base64`
 
 ---
 
